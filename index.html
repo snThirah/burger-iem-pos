@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS Burger Iem</title>
+  <style>
+    :root {
+      --primary-color: #f7b731;
+      --secondary-color: #2d3436;
+      --bg-color: #fcfcfc;
+      --card-bg: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    * { box-sizing: border-box; font-family: var(--font-family); }
+    body { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg-color); margin: 0; color: var(--secondary-color); }
+    
+    header { background-color: #000; color: white; padding: 15px; text-align: center; border-bottom: 4px solid var(--primary-color); }
+    header h1 { font-size: 2.2em; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+    header p { margin: 5px 0 0; color: #ddd; font-size: 0.9em; }
+
+    main { display: flex; flex: 1; gap: 20px; padding: 20px; flex-wrap: wrap; }
+
+    .column { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid #eee; overflow-y: auto; }
+    
+    .products { flex: 2; min-width: 300px; }
+    .cart { flex: 1.5; min-width: 280px; }
+    .sales-history { flex: 1.5; min-width: 280px; }
+
+    .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px; margin-bottom: 12px; margin-top: 15px; }
+    .section-header:first-child { margin-top: 0; }
+    h2 { margin: 0; text-transform: uppercase; font-size: 1.1rem; }
+    
+    .btn-reset { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .btn-reset:hover { background: #dc2626; }
+
+    /* Product Grid */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
+    
+    .card { 
+      border: 1px solid #eee; 
+      padding: 10px; 
+      border-radius: 8px; 
+      text-align: center; 
+      cursor: pointer; 
+      transition: all 0.2s ease; 
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 85px;
+      background: #fafafa;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-color: var(--primary-color); }
+    .card .item-name { font-weight: 600; font-size: 0.85rem; color: #333; }
+    .card .item-price { font-weight: bold; font-size: 0.95rem; color: #cc8000; }
+
+    /* Add-ons section */
+    .add-ons { margin-top: 15px; border-top: 2px dashed #ddd; padding-top: 10px; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left; }
+    th { color: #555; background-color: #f9f9f9; }
+    td button.remove-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.1rem; }
+    
+    .total-display { font-size: 1.3rem; font-weight: bold; margin: 12px 0; text-align: right; color: #000; }
+
+    /* Order Type & Payment Methods */
+    .type-selector, .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .type-btn, .payment-btn { 
+      padding: 10px; 
+      text-align: center; 
+      border: 2px solid #ddd; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: bold; 
+      font-size: 0.9rem;
+      background: #fff;
+    }
+    .type-btn.selected, .payment-btn.selected { background-color: #e0f2fe; border-color: #0284c7; color: #0369a1; }
+    
+    /* Delivery Form Inputs */
+    .delivery-fields { display: none; margin-top: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .delivery-fields input { width: 100%; padding: 8px; margin-top: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; }
+    .delivery-fee-container { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-weight: 600; font-size: 0.85rem; }
+    .delivery-fee-container input { width: 90px; margin-top: 0; text-align: right; }
+
+    button.btn-checkout { 
+      width: 100%; 
+      padding: 14px; 
+      background: #16a34a; 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      font-weight: bold; 
+      font-size: 1rem;
+      text-transform: uppercase;
+      cursor: pointer; 
+      margin-top: 15px; 
+      display: none; 
+    }
+    button.btn-checkout:hover { background: #15803d; }
+
+    /* Sales Log */
+    .log-date { font-size: 0.75rem; color: #666; display: block; }
+    .log-time { font-weight: bold; font-size: 0.85rem; }
+    .log-address { font-size: 0.75rem; color: #2563eb; margin-top: 3px; }
+    .sales-summary { display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>BURGER IEM</h1>
+    <p>07-13 Blok Kenanga • 0172358041 / 0166166550</p>
+  </header>
+
+  <main>
+    <!-- Available Products (Menu) -->
+    <div class="column products">
+      <div class="section-header">
+        <h2>Menu Burgers</h2>
+      </div>
+      <div class="grid" id="burgerGrid"></div>
+      
+      <div class="add-ons">
+        <div class="section-header">
+          <h2>Tambahan / Add-ons</h2>
+        </div>
+        <div class="grid" id="addOnGrid"></div>
+      </div>
+    </div>
+
+    <!-- Active Cart -->
+    <div class="column cart">
+      <div class="section-header">
+        <h2>Pesanan Semasa</h2>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Qty</th><th>RM</th><th></th></tr>
+        </thead>
+        <tbody id="cartTableBody"></tbody>
+      </table>
+      
+      <div class="section-header">
+        <h2>Jenis Pesanan</h2>
+      </div>
+      <div class="type-selector">
+        <div class="type-btn selected" id="pickupBtn" onclick="setOrderType('Pickup')">🚶 Pickup</div>
+        <div class="type-btn" id="deliveryBtn" onclick="setOrderType('Delivery')">🛵 Delivery</div>
+      </div>
+
+      <!-- Custom Delivery Fields -->
+      <div class="delivery-fields" id="deliveryFields">
+        <div class="delivery-fee-container">
+          <label for="customDeliveryFee">Caj Delivery (RM):</label>
+          <input type="number" id="customDeliveryFee" value="2.00" step="0.50" min="0" oninput="renderCart()">
+        </div>
+        <input type="text" id="custName" placeholder="Nama Pelanggan">
+        <input type="text" id="custPhone" placeholder="No. Telefon">
+        <input type="text" id="custAddress" placeholder="Alamat Penghantaran">
+      </div>
+
+      <div class="total-display">JUMLAH: RM<span id="cartTotal">0.00</span></div>
+
+      <div class="section-header">
+        <h2>Pembayaran</h2>
+      </div>
+      <div class="payment-methods">
+        <div class="payment-btn" id="cashBtn" onclick="selectPayment('Cash')">
+          💵 CASH
+        </div>
+        <div class="payment-btn" id="qrBtn" onclick="selectPayment('QR')">
+          📱 QR
+        </div>
+      </div>
+
+      <button class="btn-checkout" id="checkoutBtn" onclick="checkout()">Sahkan Pesanan</button>
+    </div>
+
+    <!-- Completed Sales Log -->
+    <div class="column sales-history">
+      <div class="section-header">
+        <h2>Log Jualan</h2>
+        <button class="btn-reset" onclick="resetSalesHistory()">Reset Log</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Masa & Jenis</th><th>Butiran</th><th>Cara</th><th>RM</th></tr>
+        </thead>
+        <tbody id="salesLogBody"></tbody>
+      </table>
+      <div class="sales-summary">
+        <div>Jumlah Jualan:</div>
+        <div id="totalSalesOfDay">RM0.00</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const menuBurgers = [
+      { name: 'Benjo', price: 2.50 },
+      { name: 'Ayam Biasa', price: 3.50 },
+      { name: 'Daging Biasa', price: 3.50 },
+      { name: 'Ayam Special', price: 4.50 },
+      { name: 'Daging Special', price: 4.50 },
+      { name: 'Ayam Double', price: 5.50 },
+      { name: 'Daging Double', price: 5.50 },
+      { name: 'Ayam Double Special', price: 6.50 },
+      { name: 'Daging Double Special', price: 6.50 },
+      { name: 'Ayam Special Cheese', price: 6.00 },
+      { name: 'Daging Special Cheese', price: 6.00 },
+      { name: 'Ayam Double Cheese', price: 7.00 },
+      { name: 'Daging Double Cheese', price: 7.00 },
+      { name: 'Ayam Double Special Cheese', price: 8.00 },
+      { name: 'Daging Double Special Cheese', price: 8.00 },
+    ];
+
+    const menuAddOns = [
+      { name: 'Add: Cheese', price: 1.50 },
+      { name: 'Add: Telur', price: 1.00 },
+      { name: 'Add: Patty Ayam', price: 2.00 },
+      { name: 'Add: Patty Daging', price: 2.00 }
+    ];
+
+    let cart = [];
+    let salesHistory = [];
+    let selectedPaymentMethod = null;
+    let orderType = 'Pickup';
+
+    window.onload = function() {
+      renderMenu();
+      if (localStorage.getItem('burgerIemSalesHistory')) {
+        salesHistory = JSON.parse(localStorage.getItem('burgerIemSalesHistory'));
+        renderSalesLog();
+      }
+    };
+
+    function renderMenu() {
+      const burgerGrid = document.getElementById('burgerGrid');
+      menuBurgers.forEach(burger => {
+        burgerGrid.innerHTML += `
+          <div class="card" onclick="addToCart('${burger.name}', ${burger.price})">
+            <span class="item-name">${burger.name}</span>
+            <span class="item-price">RM ${burger.price.toFixed(2)}</span>
+          </div>`;
+      });
+
+      const addOnGrid = document.getElementById('addOnGrid');
+      menuAddOns.forEach(addon => {
+        addOnGrid.innerHTML += `
+          <div class="card" onclick="addToCart('${addon.name}', ${addon.price})">
+            <span class="item-name">${addon.name}</span>
+            <span class="item-price">RM ${addon.price.toFixed(2)}</span>
+          </div>`;
+      });
+    }
+
+    function setOrderType(type) {
+      orderType = type;
+      if (type === 'Delivery') {
+        document.getElementById('deliveryBtn').classList.add('selected');
+        document.getElementById('pickupBtn').classList.remove('selected');
+        document.getElementById('deliveryFields').style.display = 'block';
+      } else {
+        document.getElementById('pickupBtn').classList.add('selected');
+        document.getElementById('deliveryBtn').classList.remove('selected');
+        document.getElementById('deliveryFields').style.display = 'none';
+      }
+      renderCart();
+    }
+
+    function addToCart(name, price) {
+      const existing = cart.find(item => item.name === name);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ name, price, qty: 1 });
+      }
+      resetPaymentSelection();
+      renderCart();
+    }
+
+    function removeCartItem(index) {
+      cart.splice(index, 1);
+      resetPaymentSelection();
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartTableBody = document.getElementById('cartTableBody');
+      cartTableBody.innerHTML = '';
+      let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+      cart.forEach((item, index) => {
+        const itemTotal = item.price * item.qty;
+        cartTableBody.innerHTML += `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>${itemTotal.toFixed(2)}</td>
+            <td><button class="remove-btn" onclick="removeCartItem(${index})">&times;</button></td>
+          </tr>`;
+      });
+
+      if (orderType === 'Delivery' && cart.length > 0) {
+        const deliveryFeeInput = parseFloat(document.getElementById('customDeliveryFee').value) || 0;
+        cartTableBody.innerHTML += `
+          <tr style="color: #0284c7; font-weight: bold;">
+            <td>Caj Delivery</td>
+            <td>1</td>
+            <td>${deliveryFeeInput.toFixed(2)}</td>
+            <td></td>
+          </tr>`;
+        subtotal += deliveryFeeInput;
+      }
+
+      document.getElementById('cartTotal').textContent = subtotal.toFixed(2);
+    }
+
+    function selectPayment(method) {
+      if (cart.length === 0) return alert('Sila tambah pesanan dahulu.');
+
+      selectedPaymentMethod = method;
+      document.getElementById('cashBtn').classList.remove('selected');
+      document.getElementById('qrBtn').classList.remove('selected');
+      document.getElementById('checkoutBtn').style.display = 'block';
+
+      if(method === 'Cash') {
+        document.getElementById('cashBtn').classList.add('selected');
+      } else {
+        document.getElementById('qrBtn').classList.add('selected');
+      }
+    }
+
+    function resetPaymentSelection() {
+      selectedPaymentMethod = null;
+      document.getElementById('cashBtn').classList.remove('selected');
+      document.getElementById('qrBtn').classList.remove('selected');
+      document.getElementById('checkoutBtn').style.display = 'none';
+    }
+
+    function checkout() {
+      if (cart.length === 0) return alert('Pesanan kosong!');
+      if (!selectedPaymentMethod) return alert('Sila pilih cara pembayaran.');
+
+      let custDetails = '';
+      let deliveryFee = 0;
+
+      if (orderType === 'Delivery') {
+        const name = document.getElementById('custName').value.trim();
+        const phone = document.getElementById('custPhone').value.trim();
+        const address = document.getElementById('custAddress').value.trim();
+        deliveryFee = parseFloat(document.getElementById('customDeliveryFee').value) || 0;
+
+        if (!name || !address) {
+          return alert('Sila isi Nama dan Alamat Penghantaran.');
+        }
+        custDetails = `${name} (${phone}) - ${address}`;
+      }
+
+      const now = new Date();
+      const date = now.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const time = now.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' });
+
+      let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      if (orderType === 'Delivery') total += deliveryFee;
+
+      const itemSummary = cart.map(i => `${i.qty}x ${i.name.replace('Add: ', '+')}`).join('<br>');
+
+      salesHistory.unshift({ date, time, itemSummary, total, method: selectedPaymentMethod, orderType, custDetails });
+      
+      localStorage.setItem('burgerIemSalesHistory', JSON.stringify(salesHistory));
+
+      // Reset Form State
+      cart = [];
+      document.getElementById('custName').value = '';
+      document.getElementById('custPhone').value = '';
+      document.getElementById('custAddress').value = '';
+      document.getElementById('customDeliveryFee').value = '2.00';
+      setOrderType('Pickup');
+      resetPaymentSelection();
+      renderCart();
+      renderSalesLog();
+    }
+
+    function renderSalesLog() {
+      const logTableBody = document.getElementById('salesLogBody');
+      logTableBody.innerHTML = '';
+      let runningTotal = 0;
+
+      salesHistory.forEach(sale => {
+        runningTotal += sale.total;
+        const methodDisplay = sale.method === 'Cash' ? '💵' : '📱';
+        const typeBadge = sale.orderType === 'Delivery' ? '🛵 Delivery' : '🚶 Pickup';
+        
+        const addressInfo = sale.custDetails ? `<div class="log-address">📍 ${sale.custDetails}</div>` : '';
+
+        logTableBody.innerHTML += `
+          <tr>
+            <td>
+              <span class="log-time">${sale.time}</span>
+              <span class="log-date">${sale.date}</span>
+              <small style="color: #0284c7;">${typeBadge}</small>
+            </td>
+            <td>
+              ${sale.itemSummary}
+              ${addressInfo}
+            </td>
+            <td>${methodDisplay}</td>
+            <td><strong>RM${sale.total.toFixed(2)}</strong></td>
+          </tr>`;
+      });
+
+      document.getElementById('totalSalesOfDay').textContent = 'RM' + runningTotal.toFixed(2);
+    }
+
+    function resetSalesHistory() {
+      const confirmReset = confirm("Adakah anda pasti untuk padam SEMUA rekod jualan?");
+      if (confirmReset) {
+        salesHistory = [];
+        localStorage.removeItem('burgerIemSalesHistory');
+        renderSalesLog();
+      }
+    }
+  </script>
+</body>
+</html>
